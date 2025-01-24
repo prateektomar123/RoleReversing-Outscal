@@ -2,53 +2,45 @@ using UnityEngine;
 
 public class EnemyController : MonoBehaviour
 {
-    public float moveSpeed = 3f;
-    public float directionChangeInterval = 2f;
-    public bool isTarget = false; // True when enemy should move randomly, false when it's the gun
-    
-    private Vector2 moveDirection;
-    private float nextDirectionChange;
-    private Camera mainCam;
-    private float width;
-    private float height;
-    
+    [SerializeField]private float enemyMoveSpeed;
+    [SerializeField] private BoxCollider2D boundary;
+    [SerializeField]private int enemyHealth;
+    Vector3 targetPosition;
+    private Rigidbody2D rb;
+    public bool isTarget;
+
     void Start()
     {
-        mainCam = Camera.main;
-        height = mainCam.orthographicSize;
-        width = height * mainCam.aspect;
-        SetNewDirection();
+        targetPosition = transform.position;
+        rb = GetComponent<Rigidbody2D>();
     }
-    
+
     void Update()
     {
-        if (!isTarget) return;
-        
-        if (Time.time >= nextDirectionChange)
+        if(!isTarget) return;
+        EnemyMovement();
+    }
+
+    private void EnemyMovement()
+    {
+        if (transform.position == targetPosition)
         {
-            SetNewDirection();
+            targetPosition = getRandomPatrolPoint();
         }
-        
-        Move();
-        ClampPosition();
+        var step=enemyMoveSpeed*Time.deltaTime;
+        transform.position = Vector3.MoveTowards(transform.position, targetPosition, step);
     }
-    
-    void SetNewDirection()
+
+    private Vector3 getRandomPatrolPoint()
     {
-        moveDirection = Random.insideUnitCircle.normalized;
-        nextDirectionChange = Time.time + directionChangeInterval;
+        Bounds bounds = boundary.bounds;
+        float xpos = Random.Range(bounds.min.x, bounds.max.x);
+        float ypos = Random.Range(bounds.min.y, bounds.max.y);
+        return new Vector3(xpos, ypos, 0f);
     }
-    
-    void Move()
+
+    private void OnTriggerEnter2D(Collider2D collision)
     {
-        transform.Translate(moveDirection * moveSpeed * Time.deltaTime);
-    }
-    
-    void ClampPosition()
-    {
-        Vector3 pos = transform.position;
-        pos.x = Mathf.Clamp(pos.x, -width + 0.5f, width - 0.5f);
-        pos.y = Mathf.Clamp(pos.y, -height + 0.5f, height - 0.5f);
-        transform.position = pos;
+        enemyHealth--;
     }
 }
